@@ -1,0 +1,12 @@
+[
+  {"id":"PL-001","name":"daily_sales_aggregation","owner":"data-eng@company.com","sla_hours":6,"criticality":"high","upstream":["raw_sales_cdc"],"downstream":["finance_dashboard","inventory_reorder_job"]},
+  {"id":"PL-002","name":"customer_360_snapshot","owner":"data-eng@company.com","sla_hours":8,"criticality":"medium","upstream":["crm_sync","loyalty_api"],"downstream":["marketing_attribution_model"]},
+  {"id":"PL-003","name":"fraud_detection_feed","owner":"risk-eng@company.com","sla_hours":1,"criticality":"critical","upstream":["transactions_stream"],"downstream":["fraud_alerts"]},
+  {"id":"PL-004","name":"financial_close_report","owner":"fintech@company.com","sla_hours":4,"criticality":"critical","upstream":["journal_entries","accounts"],"downstream":["regulatory_report"]},
+  {"id":"PL-005","name":"payment_reconciliation","owner":"data-eng@company.com","sla_hours":2,"criticality":"critical","upstream":["payments","fx_rates"],"downstream":["finance_dashboard"]},
+  {"id":"PL-006","name":"inventory_reorder_job","owner":"ops-eng@company.com","sla_hours":6,"criticality":"high","upstream":["daily_sales_aggregation"],"downstream":["wms_system"]},
+  {"id":"PL-007","name":"gdpr_anonymisation_job","owner":"privacy@company.com","sla_hours":12,"criticality":"critical","upstream":["users_raw"],"downstream":["analytics_db"]},
+  {"id":"PL-008","name":"realtime_event_stream","owner":"platform-eng@company.com","sla_hours":0.25,"criticality":"high","upstream":["kafka_events"],"downstream":["user_churn_prediction","clickstream_sessionisation"]},
+  {"id":"PL-009","name":"revenue_forecast_model","owner":"ds-team@company.com","sla_hours":24,"criticality":"medium","upstream":["daily_sales_aggregation"],"downstream":["exec_dashboard"]},
+  {"id":"PL-010","name":"compliance_audit_trail","owner":"compliance@company.com","sla_hours":1,"criticality":"critical","upstream":["all_pipelines"],"downstream":["regulatory_report"]}
+]

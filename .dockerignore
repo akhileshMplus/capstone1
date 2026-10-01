@@ -1,0 +1,19 @@
+# Keep the Docker build context small and avoid leaking local/dev-only files into the image.
+.git/
+.gitignore
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+tests/
+.env
+.env.*
+!.env.example
+index/
+.DS_Store
+README.md
+requirements-dev.txt
+pytest.ini

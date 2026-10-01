@@ -1,0 +1,7 @@
+-r requirements.txt
+pytest>=8.0.0
+
+# UI / local validation tools (not needed in the production container)
+streamlit>=1.38.0
+langgraph-cli[inmem]>=0.1.55
+requests>=2.32.0

@@ -1,0 +1,44 @@
+services:
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:?OPENAI_API_KEY must be set}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - API_KEY=${API_KEY:?API_KEY must be set — no insecure default is allowed}
+      - THREAD_TTL_SECONDS=${THREAD_TTL_SECONDS:-86400}
+      # Legacy env var names from notebook
+      - endpoint=${endpoint:-}
+      - deployment_name=${deployment_name:-}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  mcp_server:
+    build: .
+    command: python mcp_server/server.py
+    ports:
+      - "8001:8001"
+    environment:
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:?OPENAI_API_KEY must be set}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o-mini}
+      - MCP_API_KEY=${MCP_API_KEY:?MCP_API_KEY must be set — no insecure default is allowed}
+      - MCP_PORT=8001
+      - INCIDENT_TTL_SECONDS=${INCIDENT_TTL_SECONDS:-86400}
+      - endpoint=${endpoint:-}
+      - deployment_name=${deployment_name:-}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('localhost', 8001), timeout=3).close()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
