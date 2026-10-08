@@ -5,16 +5,34 @@ This is a thin client over the FastAPI backend (api/main.py) — it does not tal
 the LangGraph graph directly, so it exercises the exact same contract a real
 caller would use.
 
-Run:
+IMPORTANT for cloud deployment: this app is only the frontend. Streamlit Community
+Cloud runs just this script — it does NOT also run the separate FastAPI backend.
+The backend must be deployed separately (e.g. Render/Railway/Fly.io/a VM) and its
+public URL configured below (via Secrets or the sidebar). See README.md's
+"Deploying to the cloud" section.
+
+Run locally:
     pip install -r requirements-dev.txt
     streamlit run ui/streamlit_app.py
 """
 from __future__ import annotations
 
+import os
 import time
 
 import requests
 import streamlit as st
+
+
+def _default(key: str, fallback: str) -> str:
+    """Prefer st.secrets (cloud deployments), then env vars, then a hardcoded fallback."""
+    try:
+        if key in st.secrets:
+            return str(st.secrets[key])
+    except Exception:
+        pass  # no secrets.toml configured — fine for local runs
+    return os.getenv(key, fallback)
+
 
 SAMPLE_LOG = """2025-06-01 02:14 UTC | pipeline: daily_sales_aggregation
 ERROR: NullPointerException in transform_step
@@ -32,9 +50,12 @@ if "threads" not in st.session_state:
 # ── Sidebar: connection settings ──────────────────────────────────────────────
 with st.sidebar:
     st.header("Connection")
-    base_url = st.text_input("API base URL", value="http://localhost:8000").rstrip("/")
-    api_key = st.text_input("X-API-Key", type="password")
+    base_url = st.text_input(
+        "API base URL", value=_default("API_BASE_URL", "http://localhost:8000")
+    ).rstrip("/")
+    api_key = st.text_input("X-API-Key", value=_default("API_KEY", ""), type="password")
     st.caption("Must match the API_KEY the FastAPI server was started with.")
+    st.caption("Pre-fill both via `.streamlit/secrets.toml` (API_BASE_URL / API_KEY) when deployed.")
 
     if st.button("Check /health"):
         try:

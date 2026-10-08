@@ -86,7 +86,8 @@ capstone1/
 │   └── main.py                  # FastAPI wrapper
 ├── tests/                       # pytest unit tests (routing + safety-gate logic)
 ├── ui/
-│   └── streamlit_app.py         # Streamlit dashboard (talks to the FastAPI backend)
+│   ├── streamlit_app.py         # Streamlit dashboard (talks to the FastAPI backend)
+│   └── requirements.txt         # lightweight deps for Streamlit Cloud deployment
 ├── langgraph.json               # LangGraph Studio config (`langgraph dev`)
 ├── Dockerfile                   # Multi-stage, non-root runtime
 ├── docker-compose.yml
@@ -272,3 +273,48 @@ Open the URL Streamlit prints, enter the API base URL + `X-API-Key` in the
 sidebar, submit a log on the **New Incident** tab, then switch to **Review &
 Approve** to see the generated severity/root-cause/remediation steps (with
 SQL, risk level, and safety validation per step) and click Approve/Reject.
+
+---
+
+## Deploying to the cloud
+
+This project is **two separate services** — a FastAPI backend (agent/graph/RAG)
+and a Streamlit frontend that calls it over HTTP. Streamlit Community Cloud only
+runs the Streamlit script; it has no way to also run the backend process, so the
+backend must be deployed somewhere else first, and the frontend pointed at it.
+
+### 1. Backend — any container host (Render, Railway, Fly.io, a VM, etc.)
+
+Build and run the existing [Dockerfile](Dockerfile) (already multi-stage,
+non-root, with a `/health` check). Set these env vars on the host:
+
+```
+OPENAI_API_KEY, OPENAI_MODEL, OPENAI_BASE_URL   # Groq/OpenAI-compatible LLM
+API_KEY                                          # long random secret — required
+LANGSMITH_TRACING, LANGSMITH_API_KEY,            # optional tracing
+LANGSMITH_PROJECT, LANGSMITH_ENDPOINT
+```
+
+Expose port `8000` and note the resulting public URL (e.g.
+`https://capstone1-api.onrender.com`) — the frontend needs it.
+
+### 2. Frontend — Streamlit Community Cloud
+
+1. Deploy from the GitHub repo, main file path: `ui/streamlit_app.py`
+2. In **Advanced settings**, set the Python dependencies file to
+   **`ui/requirements.txt`** (a lightweight `streamlit`+`requests` file — the
+   frontend is just an HTTP client, it doesn't need chromadb/langgraph/etc.)
+3. In the app's **Settings → Secrets**, add:
+   ```toml
+   API_BASE_URL = "https://capstone1-api.onrender.com"
+   API_KEY = "the-same-long-random-secret-as-the-backend"
+   ```
+   These pre-fill the sidebar fields (still editable/overridable per session).
+
+### Notes
+- The in-memory thread store and LangGraph `MemorySaver` (see README assumption
+  #6) mean restarting the backend clears all in-flight triage state — expected
+  in this demo architecture, not a bug.
+- The MCP server ([mcp_server/server.py](mcp_server/server.py)) is a separate
+  deployable process too, with its own `MCP_API_KEY`; deploy it the same way as
+  the backend if you need MCP clients to reach it.

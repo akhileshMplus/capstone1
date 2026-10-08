@@ -14,6 +14,7 @@ import os
 import re
 import sqlite3
 from datetime import datetime
+from threading import Lock
 from typing import Any
 
 from openai import OpenAI
@@ -53,7 +54,9 @@ def _llm(prompt: str, max_tokens: int = 512) -> str:
 
 # ── Mock data warehouse ────────────────────────────────────────────────────────
 def _build_mock_db() -> sqlite3.Connection:
-    conn = sqlite3.connect(":memory:")
+    # check_same_thread=False: this connection is built once at import time but
+    # queried from the per-request background worker threads spawned by the API/MCP server.
+    conn = sqlite3.connect(":memory:", check_same_thread=False)
     conn.executescript("""
         CREATE TABLE pipelines (
             id TEXT PRIMARY KEY,
@@ -93,6 +96,7 @@ def _build_mock_db() -> sqlite3.Connection:
 
 
 _DB: sqlite3.Connection = _build_mock_db()
+_DB_LOCK = Lock()  # serialize access since the connection is shared across worker threads
 
 # Patterns that signal a write operation — block all of these at the tool level.
 _WRITE_KEYWORDS = re.compile(
@@ -123,9 +127,10 @@ def execute_sql(query: str) -> dict[str, Any]:
         }
 
     try:
-        cursor = _DB.execute(stripped)
-        columns = [d[0] for d in cursor.description] if cursor.description else []
-        rows = cursor.fetchall()
+        with _DB_LOCK:
+            cursor = _DB.execute(stripped)
+            columns = [d[0] for d in cursor.description] if cursor.description else []
+            rows = cursor.fetchall()
         return {
             "columns": columns,
             "rows": [list(r) for r in rows],
