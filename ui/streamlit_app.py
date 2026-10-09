@@ -1,5 +1,5 @@
 """
-Pipeline Intelligence — Triage Console
+Data Pipeline Intelligence — Triage Console
 =======================================
 Self-contained Streamlit app: calls LangGraph directly, no FastAPI backend required.
 Runs on Streamlit Community Cloud as-is.
